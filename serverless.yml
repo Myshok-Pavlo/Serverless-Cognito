@@ -1,0 +1,91 @@
+org: myshokpavlo
+app: users
+# serverless.yml
+service: users
+ 
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: us-east-1 # Overwrite the default region used. Default is us-east-1
+ 
+resources:
+  Resources:
+    MyUserpool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: false
+          InviteMessageTemplate:
+            EmailMessage: Your username is {username} and temporary password is {####}.
+            EmailSubject: Your temporary password
+            SMSMessage: Your username is {username} and temporary password is {####}.
+          UnusedAccountValidityDays: 7
+        AccountRecoverySetting:
+          RecoveryMechanisms:
+            - Name: "verified_email"
+              Priority: 1
+        UsernameAttributes:
+          - email
+        UsernameConfiguration:
+          CaseSensitive: false
+        UserPoolAddOns:
+          AdvancedSecurityMode: OFF
+        DeviceConfiguration: 
+          ChallengeRequiredOnNewDevice: false
+          DeviceOnlyRememberedOnUserPrompt: false
+        EmailConfiguration:
+          ReplyToEmailAddress: donotreply@domain.tld
+        EmailVerificationMessage: Your verification code is {####}.
+        EmailVerificationSubject: Your verification code
+        EnabledMfas:
+          - SMS_MFA
+        MfaConfiguration: ON
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: false
+            RequireUppercase: true
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Required: true
+            Mutable: false
+          - Name: phone_number
+            AttributeDataType: String
+            Required: true
+            Mutable: false
+        SmsConfiguration:
+            ExternalId: "90234783"
+            SnsCallerArn: "arn:aws:iam::846636384827:role/service-role/-SMS-Role"
+            SnsRegion: "us-east-1"
+        SmsVerificationMessage: "Your verification code is {####}. "
+        AutoVerifiedAttributes:
+          - email
+          - phone_number
+        UserAttributeUpdateSettings:  
+          AttributesRequireVerificationBeforeUpdate: 
+            - email
+            - phone_number
+        VerificationMessageTemplate:
+          DefaultEmailOption: CONFIRM_WITH_LINK
+        UserPoolName: cognitoPool
+    MyCognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: cognitoPool-client
+        ExplicitAuthFlows:
+          - "ALLOW_CUSTOM_AUTH"
+          - "ALLOW_REFRESH_TOKEN_AUTH"
+          - "ALLOW_USER_SRP_AUTH"
+          - "ALLOW_USER_PASSWORD_AUTH"
+        UserPoolId:
+          Ref: MyUserpool
+        GenerateSecret: false
+    MyCognitoUserPollDomain:
+      Type: AWS::Cognito::UserPoolDomain
+      Properties: 
+        Domain: fordevelopers
+        UserPoolId:
+          Ref: MyUserpool  
